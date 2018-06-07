@@ -16,20 +16,28 @@ mySocket.bind((HOST, PORT))
 mySocket.listen(1)
 
 
-def listen_to_clients(socket):
+def listen_to_clients(sock):
     while True:
-        conn, addr = socket.accept()
-        clients.append(conn)
-        thread_new_client = threading.Thread(target=client_handler, args=(conn, messages))
-        thread_new_client.start()
+        try:
+            print("Waiting for connection...")
+            conn, addr = sock.accept()
+            print("A client is connected")
+            clients.append(conn)
+            thread_new_client = threading.Thread(target=client_handler, args=(conn, messages))
+            thread_new_client.start()
+        except ConnectionResetError:
+            print("connection reset error")
+            continue
 
 
 def client_handler(connection, messages):
     while True:
         user_data = connection.recv(1024).decode()
         print(user_data)
-        # if user_data.startswith('data'):
-        messages.put(user_data)
+        if user_data.startswith('data'):
+            messages.put(user_data)
+        elif user_data.startswith('EXIT'):
+            connection.close()
 
 
 def broadcast_messages():
