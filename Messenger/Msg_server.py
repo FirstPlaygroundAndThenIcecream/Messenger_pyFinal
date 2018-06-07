@@ -8,12 +8,12 @@ messages = queue.Queue()
 # storage for clients
 clients = []
 
-# set server
-host = "127.0.0.1"
-port = 3000
+# set TCP/IP server
+HOST = '127.0.0.1'
+PORT = 3000
 mySocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-mySocket.bind((host, port))
-mySocket.listen(5)
+mySocket.bind((HOST, PORT))
+mySocket.listen(1)
 
 
 def listen_to_clients(socket):
@@ -24,11 +24,12 @@ def listen_to_clients(socket):
         thread_new_client.start()
 
 
-def client_handler(connection):
+def client_handler(connection, messages):
     while True:
-        user_data = connection.recv(2048).decode()
-        if user_data.startswith('data'):
-            messages.put(user_data)
+        user_data = connection.recv(1024).decode()
+        print(user_data)
+        # if user_data.startswith('data'):
+        messages.put(user_data)
 
 
 def broadcast_messages():
