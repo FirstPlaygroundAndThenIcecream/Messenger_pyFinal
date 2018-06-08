@@ -15,6 +15,8 @@ mySocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 mySocket.bind((HOST, PORT))
 mySocket.listen(1)
 
+lock = threading.Lock()
+
 
 def listen_to_clients(sock):
     while True:
@@ -22,28 +24,45 @@ def listen_to_clients(sock):
             print("Waiting for connection...")
             conn, addr = sock.accept()
             print("A client is connected")
+        except ConnectionResetError:
+            print("connection reset error")
+        except OSError:
+            print("OS error")
+        else:
             clients.append(conn)
             thread_new_client = threading.Thread(target=client_handler, args=(conn, messages))
             thread_new_client.start()
-        except ConnectionResetError:
-            print("connection reset error")
-            continue
+            thread_total = threading.active_count()
+            print('{:d} threads are running on the server side'.format(thread_total))
 
 
 def client_handler(connection, messages):
     while True:
-        user_data = connection.recv(1024).decode()
-        print(user_data)
-        if user_data.startswith('data'):
-            messages.put(user_data)
-        elif user_data.startswith('EXIT'):
-            connection.close()
+        try:
+            user_data = connection.recv(1024).decode()
+            print(user_data)
+        except ConnectionResetError:
+            print("A client has dropped connection")
+            with lock:
+                clients.remove(connection)
+            break
+        except OSError:
+            print("A client has quit")
+            break
+        else:
+            if user_data.startswith('data'):
+                messages.put(user_data)
+            elif user_data.startswith('EXIT'):
+                connection.close()
+                with lock:
+                    clients.remove(connection)
 
 
 def broadcast_messages():
     while True:
         if len(clients) > 0:
             broadcast_to_all = str(messages.get()).encode()
+            #with lock:
             for client in clients:
                 client.send(broadcast_to_all)
 
