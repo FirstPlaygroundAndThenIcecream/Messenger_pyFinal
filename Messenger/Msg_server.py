@@ -56,6 +56,8 @@ def client_handler(connection, messages):
             break
         except RuntimeError:
             print("runtime error")
+            with lock:
+                clients.remove(connection)
             break
         else:
             if user_data.startswith('data'):

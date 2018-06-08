@@ -5,6 +5,7 @@ from tkinter import *
 SERVER_ADDR = '127.0.0.1'
 PORT = 3000
 
+# set TCP/IP socket
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((SERVER_ADDR, PORT))
 
@@ -28,7 +29,7 @@ text_input.pack(side=TOP)
 
 message = ""
 
-# set TCP/IP socket
+
 
 # while message != 'EXIT':
 #     message = input(':')
@@ -45,10 +46,15 @@ def display_message():
     print(message.strip())
 
 
+send_button = Button(right_frame, text="send", command=display_message)
+send_button.pack(side=TOP)
+
+
 def recv_messages(my_socket):
     while True:
         try:
             message_received = my_socket.recv(1024).decode()
+            print(type(message_received))
         except ConnectionAbortedError:
             print('>>> Can not receive message from server')
             break
@@ -56,11 +62,12 @@ def recv_messages(my_socket):
             print('>>> Can not receive message from server')
             break
         else:
-            text_chat.insert(END, message_received)
-            print('>>> ' + message_received)
+            if message_received:
+                text_chat.insert(END, message_received)
+                print(message_received)
 
 
-send_thread = threading.Thread(target=recv_messages, args=(client_socket,))
+send_thread = threading.Thread(target=recv_messages, args=(client_socket,), daemon=True)
 send_thread.start()
 
 thread_total = threading.active_count()
@@ -70,8 +77,6 @@ print('{:d} threads are running on the client side'.format(thread_total))
 # command=lambda: recv_messages(client_socket)
 
 
-send_button = Button(right_frame, text="send", command=display_message)
-send_button.pack(side=TOP)
 
 
 # bottom_frame = Frame(right_frame)
@@ -79,7 +84,7 @@ send_button.pack(side=TOP)
 
 text_chat = Text(right_frame, height=30, width=50)
 text_chat.pack(side=BOTTOM)
-text_chat.insert(END, "to demonstrate chat history, should be view only")
+text_chat.insert(END, "")
 
 root.mainloop()
 
