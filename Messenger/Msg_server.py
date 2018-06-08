@@ -46,8 +46,16 @@ def client_handler(connection, messages):
             with lock:
                 clients.remove(connection)
             break
+        except ConnectionAbortedError:
+            print("Unexpected lost connection")
+            with lock:
+                clients.remove(connection)
+            break
         except OSError:
             print("A client has quit")
+            break
+        except RuntimeError:
+            print("runtime error")
             break
         else:
             if user_data.startswith('data'):
