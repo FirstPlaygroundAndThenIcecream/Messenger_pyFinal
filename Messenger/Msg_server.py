@@ -1,6 +1,7 @@
 import socket
 import queue
 import threading
+import msg_db
 
 # storage for messages
 messages = queue.Queue()
@@ -60,7 +61,11 @@ def client_handler(connection, messages):
                 clients.remove(connection)
             break
         else:
-            if user_data.startswith('data'):
+            if user_data.startswith('JOIN'):
+                protocol, user_name, user_psw = user_data.split(";")
+                messages.put('J_OK')
+                msg_db.add_user_to_db(user_name, user_psw)
+            elif user_data.startswith('DATA'):
                 messages.put(user_data)
             elif user_data.startswith('EXIT'):
                 connection.close()
