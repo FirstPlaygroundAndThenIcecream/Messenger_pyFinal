@@ -81,7 +81,7 @@ class MyWeirdApp:
                 message_received = my_socket.recv(1024).decode()
                 print(type(message_received))
             except ConnectionAbortedError:
-                print('>>> Can not receive message from server')
+                print('>>> Server has dropped connection')
                 break
             except OSError:
                 print('>>> Can not receive message from server')
@@ -91,8 +91,9 @@ class MyWeirdApp:
                 #     break
                 # else:
                 if message_received.startswith('J_OK'):
+                    protocol, user_name = message_received.split(";")
                     print('J_OK')
-                    self.list_online_users.insert(END, self.entry_name.get())
+                    self.list_online_users.insert(END, user_name)
                     self.clear()
                 elif message_received.startswith('DATA'):
                     self.text_chat_record.insert(END, message_received)

@@ -63,7 +63,8 @@ def client_handler(connection, messages):
         else:
             if user_data.startswith('JOIN'):
                 protocol, user_name, user_psw = user_data.split(";")
-                messages.put('J_OK')
+                msg_to_user = 'J_OK;' + user_name
+                messages.put(msg_to_user)
                 msg_db.add_user_to_db(user_name, user_psw)
             elif user_data.startswith('DATA'):
                 messages.put(user_data)
@@ -77,7 +78,6 @@ def broadcast_messages():
     while True:
         if len(clients) > 0:
             broadcast_to_all = str(messages.get()).encode()
-            #with lock:
             for client in clients:
                 client.send(broadcast_to_all)
 
