@@ -2,6 +2,7 @@ import socket
 import threading
 from tkinter import *
 from tkinter import ttk
+import msg_db
 
 SERVER_ADDR = '127.0.0.1'
 PORT = 3000
@@ -29,7 +30,7 @@ class MyWeirdApp:
 
         ttk.Label(self.frame_content, text='Name:').grid(row=0, column=0, padx=5, sticky='sw')
         ttk.Label(self.frame_content, text='Password:').grid(row=0, column=1, padx=5, sticky='sw')
-        ttk.Label(self.frame_content, text='Type message:').grid(row=4, column=0, padx=5, sticky='sw')
+        ttk.Label(self.frame_content, text='Type message:').grid(row=3, column=0, padx=5, sticky='sw')
 
         self.entry_name = ttk.Entry(self.frame_content, width=24, font=('Consolas', 10))
         self.entry_psw = ttk.Entry(self.frame_content, width=24, font=('Consolas', 10))
@@ -41,16 +42,23 @@ class MyWeirdApp:
         self.text_message.grid(row=4, column=0, columnspan=2)
         self.text_chat_record.grid(row=6, column=0, columnspan=2, pady=5)
 
-        ttk.Button(self.frame_content, text='connect')\
+        ttk.Button(self.frame_content, text='connect', command=self.add_user_to_db)\
             .grid(row=3, column=1, padx=5, pady=5, sticky='e')
         ttk.Button(self.frame_content, text='Send', command=self.collect_message)\
             .grid(row=5, column=0, padx=5, pady=5, sticky='e')
-        ttk.Button(self.frame_content, text='Clear')\
+        ttk.Button(self.frame_content, text='Clear', command=self.clear)\
             .grid(row=5, column=1, padx=5, pady=5, sticky='w')
+
+# -----------------------------event--------------------------------------------------------------------------
+    def clear(self):
+        self.entry_name.delete(0, 'end')
+        self.entry_psw.delete(0, 'end')
+        self.text_message.delete(1.0, 'end')
 
     def collect_message(self):
         user_message = self.text_message.get(1.0, 'end')
         client_socket.send(user_message.encode())
+        self.text_message.delete(1.0, 'end')
 
     def recv_messages(self, my_socket):
         while True:
@@ -69,6 +77,14 @@ class MyWeirdApp:
                 # else:
                 self.text_chat_record.insert(END, message_received)
                 print(message_received)
+
+    def add_user_to_db(self):
+        user_name = self.entry_name.get()
+        user_psw = self.entry_psw.get()
+        print(user_name)
+        client_socket.send(user_name.encode())
+        msg_db.add_user_to_db(user_name, user_psw)
+
 
 def main():
     root = Tk()
