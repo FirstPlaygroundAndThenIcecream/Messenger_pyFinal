@@ -1,14 +1,6 @@
-class User:
-    'Base class for all users'
+def extract_user_name(client_data):
+    protocol, user_name, other_data = client_data.split(";")
+    return user_name
 
-    def __init__(self, name, id):
-        self.name = name
-        self.id = id
-
-    def getUsername(self):
-        return self.name
-
-    def getUserID(self):
-        return self.id
 
     

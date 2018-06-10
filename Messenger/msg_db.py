@@ -38,24 +38,26 @@ def make_user(name, password):
     return user
 
 
-
 # ---------------print test----------------
+
 
 # print(type(user_collection))
 #
 # print(type(user_collection.find_one({
 #     "user_name": "hugo"
 # })))
-# x = check_name_duplicate("John")
+
 #
 # # user_collection.find_one({"user_name": "John"})
 # print(user_collection.find_one({"user_name": "John"})['user_name'])
-# print(x)
+
+x = check_name_duplicate("John")
+print(x)
 
 
 # result = check_name_duplicate("Ji")
 # print(result)
 #
 
-result = verify_user("tintin", "tintin")
-print(result)
+# result = verify_user("tintin", "tintin")
+# print(result)

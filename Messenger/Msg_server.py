@@ -2,12 +2,16 @@ import socket
 import queue
 import threading
 import msg_db
+import protocol
 
 # storage for messages
 messages = queue.Queue()
 
-# storage for clients
+# storage for clients connection
 clients = []
+
+# user name list
+users = []
 
 # set TCP/IP server
 HOST = '127.0.0.1'
@@ -43,6 +47,7 @@ def client_handler(connection, messages):
             user_data = connection.recv(1024).decode()
         except ConnectionResetError:
             print("A client has dropped connection")
+            users.remove(user_data.split(';')[1])
             with lock:
                 clients.remove(connection)
             break
@@ -61,39 +66,55 @@ def client_handler(connection, messages):
             break
         else:
             if user_data.startswith('JO_N'):
-                protocol, user_name, user_psw = user_data.split(";")
-                user_name_duplicated = msg_db.check_name_duplicate(user_name)
-                if user_name_duplicated:
-                    print(user_name_duplicated)
-                    connection.send('N_ER'.encode())
+                server_response = protocol.response_JO_N(user_data, msg_db)
+
+                if server_response.startswith('N_ER'):
+                    connection.send(server_response.encode())
                     with lock:
                         clients.remove(connection)
-                else:
-                    # bug should not send to every one with user name
-                    msg_to_user = 'J_OK;' + user_name
-                    connection.send(msg_to_user.encode())
-                    msg_db.add_user_to_db(user_name, user_psw)
+                elif server_response.startswith('J_OK'):
+                    connection.send(server_response.encode())
+                    users.append(server_response.split(';')[1])
+                    all_users = broadcast_user_list()
+                    messages.put(all_users)
+                    # user_list = 'LIST;' + users
+                    # messages.put(users.encode())
+                    print(len(users))
+                    print(server_response.split(';')[1])
+
             elif user_data.startswith('JOIN'):
-                protocol, user_name, user_psw = user_data.split(";")
-                result = msg_db.verify_user(user_name, user_psw)
-                if result:
-                    msg_to_user = 'J_OK;' + user_name
-                    connection.send(msg_to_user.encode())
-                    msg_db.add_user_to_db(user_name, user_psw)
-                else:
-                    print("user is not found")
-                    messages.put('J_ER')
-                    with lock:
-                        clients.remove(connection)
+                server_response = protocol.response_JOIN(user_data, msg_db)
+
+                if server_response.startswith('J_OK'):
+                    connection.send(server_response.encode())
+                    users.append(server_response.split(';')[1])
+                    all_users = broadcast_user_list()
+                    messages.put(all_users)
+                elif server_response.startswith('J_ER'):
+                    connection.send(server_response.encode())
+
             elif user_data.startswith('DATA'):
-                protocol, user_name, use_msg = user_data.split(';')
-                broadcast_msg = protocol + ';' + user_name + ": " + use_msg
-                print(broadcast_msg)
+                broadcast_msg = protocol.response_DATA(user_data)
                 messages.put(broadcast_msg)
-            elif user_data.startswith('EXIT'):
-                connection.close()
-                with lock:
-                    clients.remove(connection)
+
+            elif user_data.startswith('QUIT'):
+                connection.send('REMV'.encode())
+                # remove from user list here
+                # remove connection from error catch part
+                #
+                # connection.close()
+                # with lock:
+                #     clients.remove(connection)
+
+
+def broadcast_user_list():
+    all_user = ''
+    for user in users:
+        all_user += user + ' '
+    all_user = 'LIST;' + all_user
+    return all_user
+    # for client in clients:
+    #     client.send(all_user)
 
 
 def broadcast_messages():

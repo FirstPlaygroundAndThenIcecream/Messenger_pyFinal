@@ -1,11 +1,10 @@
-import User
+
 from TestArea import ModuleTest
 import queue
 
 
 
-user = User.User("Jane", id)
-print(user.getUsername())
+
 
 x = ModuleTest.addFunc(2, 3)
 
@@ -22,3 +21,12 @@ print(q.get())
 print('this is \ntest'[9:])
 
 print(len('you are log in as:\n'))
+
+users = ['pabjek', 'huhkuwud', 'hugo']
+
+s=''
+for user in users[0:2]:
+    s += user + " "
+
+s = 'LIST ' + s
+print(s)

@@ -29,9 +29,9 @@ class MyWeirdApp:
 
         ttk.Label(self.frame_chat, text='Name:').grid(row=0, column=1, padx=5, sticky='sw')
         ttk.Label(self.frame_chat, text='Password:').grid(row=0, column=2, padx=5, sticky='sw')
-        ttk.Label(self.frame_chat, text='Type message:').grid(row=4, column=1, columnspan=2, padx=5)
+        ttk.Label(self.frame_chat, text='Type message:').grid(row=5, column=1, columnspan=2, padx=5)
         self.name_holder = ttk.Label(self.frame_chat, text='**Welcome**')
-        self.name_holder.grid(row=3, column=1, padx=5, sticky='sw')
+        self.name_holder.grid(row=4, column=1, columnspan=2, padx=5, sticky='sw')
 
         self.entry_name = ttk.Entry(self.frame_chat, width=24, font=('Consolas', 10))
         self.entry_psw = ttk.Entry(self.frame_chat, width=24, font=('Consolas', 10))
@@ -40,20 +40,23 @@ class MyWeirdApp:
 
         self.entry_name.grid(row=1, column=1, padx=5)
         self.entry_psw.grid(row=1, column=2, padx=5)
-        self.text_message.grid(row=5, column=1, columnspan=2)
-        self.text_chat_record.grid(row=7, column=1, columnspan=2, pady=5)
+        self.text_message.grid(row=6, column=1, columnspan=2)
+        self.text_chat_record.grid(row=8, column=1, columnspan=2, pady=5)
 
         self.new_user_btn = ttk.Button(self.frame_chat, text='new user', command=self.request_to_sign_up)
-        self.new_user_btn.grid(row=3, column=2, padx=5, pady=5, sticky='w')
+        self.new_user_btn.grid(row=3, column=1, padx=5, pady=5, sticky='e')
 
         self.log_in_btn = ttk.Button(self.frame_chat, text='log in', command=self.request_to_log_in)
-        self.log_in_btn.grid(row=3, column=2, padx=5, pady=5, sticky='e')
+        self.log_in_btn.grid(row=3, column=2, padx=5, pady=5, sticky='w')
+
+        self.log_out_btn = ttk.Button(self.frame_chat, text='log out', command=self.request_to_log_out)
+        self.log_out_btn.grid(row=3, column=2, padx=5, pady=5, sticky='e')
 
         self.send_btn = ttk.Button(self.frame_chat, text='Send', command=self.collect_message)
-        self.send_btn.grid(row=6, column=1, padx=5, pady=5, sticky='e')
+        self.send_btn.grid(row=7, column=1, padx=5, pady=5, sticky='e')
 
         self.clear_btn = ttk.Button(self.frame_chat, text='Clear', command=self.clear)
-        self.clear_btn.grid(row=6, column=2, padx=5, pady=5, sticky='w')
+        self.clear_btn.grid(row=7, column=2, padx=5, pady=5, sticky='w')
 
         self.frame_multipurpose = ttk.Frame(master)
         self.frame_multipurpose.pack(side=LEFT)
@@ -73,8 +76,7 @@ class MyWeirdApp:
 
 # -----------------------------event--------------------------------------------------------------------------
     def recv_messages(self, my_socket):
-        chat_possible = False
-        log_in_success = False
+        self.disable_chat_input()
         while True:
             try:
                 message_received = my_socket.recv(1024).decode()
@@ -89,27 +91,44 @@ class MyWeirdApp:
                     error_msg = 'please choose another user name'
                     messagebox.showerror('error', error_msg)
                     self.clear()
+                    self.disable_chat_input()
+
                 elif message_received.startswith('J_ER'):
                     error_msg = 'Can not find user, please try again'
                     messagebox.showerror('error', error_msg)
                     self.clear()
+                    self.disable_chat_input()
+
                 elif message_received.startswith('J_OK'):
                     self.clear()
-                    chat_possible = True
                     protocol, user_name = message_received.split(';')
                     print('J_OK')
-                    self.list_online_users.insert(END, user_name)
-                    log_info_text = 'you are log in as:\n' + user_name
+                    # self.list_online_users.insert(END, user_name)
+                    log_info_text = 'you are log in as: ' + user_name
                     self.name_holder.config(text=log_info_text)
-                    self.entry_name.config(state=DISABLED)
-                    self.entry_psw.config(state=DISABLED)
-                    self.new_user_btn.config(state=DISABLED)
-                    self.log_in_btn.config(state=DISABLED)
-                elif message_received.startswith('DATA') and chat_possible is True:
+                    self.disable_log_in()
+                    self.enable_chat_input()
+
+                elif message_received.startswith('DATA'):
                     self.text_chat_record.insert(END, message_received[5:])
-                elif message_received.startswith('DATA') and chat_possible is False:
+
+                elif message_received.startswith('DATA'):
                     warning_msg = 'please log in or register first'
                     messagebox.showwarning('warning', warning_msg)
+
+                elif message_received.startswith('LIST'):
+                    online_users = message_received.split(';')[1]
+                    online_users_list = online_users.split(' ')
+                    self.list_online_users.delete(0, END)
+                    for user in online_users_list:
+                        self.list_online_users.insert(END, user)
+
+
+                elif message_received.startswith('REMV'):
+                    log_out_msg = 'you have log out, please log in to use our service again'
+                    messagebox.showinfo('info', log_out_msg)
+                    self.enable_log_in()
+                    self.disable_chat_input()
 
     def request_to_log_in(self):
         user_name = self.entry_name.get()
@@ -123,16 +142,48 @@ class MyWeirdApp:
         user = 'JO_N;' + user_name + ';' + user_psw
         client_socket.send(user.encode())
 
+    def request_to_log_out(self):
+        user_name = self.get_user_name()
+        user_message = 'QUIT' + ';' + user_name
+        client_socket.send(user_message.encode())
+
     def clear(self):
         self.entry_name.delete(0, 'end')
         self.entry_psw.delete(0, 'end')
 
     def collect_message(self):
-        local_user_name = self.name_holder['text']
+        local_user_name = self.get_user_name()
         user_message = self.text_message.get(1.0, 'end')
-        user_message = 'DATA;' + local_user_name[19:] + ';' + user_message
+        user_message = 'DATA;' + local_user_name + ';' + user_message
         client_socket.send(user_message.encode())
         self.text_message.delete(1.0, 'end')
+
+    def get_user_name(self):
+        return self.name_holder['text'][19:]
+
+    def disable_chat_input(self):
+        self.text_message.config(state=DISABLED)
+        self.send_btn.config(state=DISABLED)
+        self.clear_btn.config(state=DISABLED)
+
+    def enable_chat_input(self):
+        self.text_message.config(state=NORMAL)
+        self.send_btn.config(state=NORMAL)
+        self.clear_btn.config(state=NORMAL)
+
+    def disable_log_in(self):
+        self.entry_name.config(state=DISABLED)
+        self.entry_psw.config(state=DISABLED)
+        self.new_user_btn.config(state=DISABLED)
+        self.log_in_btn.config(state=DISABLED)
+
+    def enable_log_in(self):
+        self.name_holder.config(text='**Welcome**')
+        self.entry_name.config(state=NORMAL)
+        self.entry_psw.config(state=NORMAL)
+        self.new_user_btn.config(state=NORMAL)
+        self.log_in_btn.config(state=NORMAL)
+
 
 
 def main():
