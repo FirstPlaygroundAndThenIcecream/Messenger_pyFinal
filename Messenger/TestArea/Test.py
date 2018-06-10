@@ -1,5 +1,5 @@
 import User
-import ModuleTest
+from TestArea import ModuleTest
 import queue
 
 
@@ -18,3 +18,7 @@ q.put("c")
 
 print(q.get())
 print(q.get())
+
+print('this is \ntest'[9:])
+
+print(len('you are log in as:\n'))

@@ -41,7 +41,6 @@ def client_handler(connection, messages):
     while True:
         try:
             user_data = connection.recv(1024).decode()
-            print(user_data)
         except ConnectionResetError:
             print("A client has dropped connection")
             with lock:
@@ -61,13 +60,36 @@ def client_handler(connection, messages):
                 clients.remove(connection)
             break
         else:
-            if user_data.startswith('JOIN'):
+            if user_data.startswith('JO_N'):
                 protocol, user_name, user_psw = user_data.split(";")
-                msg_to_user = 'J_OK;' + user_name
-                messages.put(msg_to_user)
-                msg_db.add_user_to_db(user_name, user_psw)
+                user_name_duplicated = msg_db.check_name_duplicate(user_name)
+                if user_name_duplicated:
+                    print(user_name_duplicated)
+                    connection.send('N_ER'.encode())
+                    with lock:
+                        clients.remove(connection)
+                else:
+                    # bug should not send to every one with user name
+                    msg_to_user = 'J_OK;' + user_name
+                    connection.send(msg_to_user.encode())
+                    msg_db.add_user_to_db(user_name, user_psw)
+            elif user_data.startswith('JOIN'):
+                protocol, user_name, user_psw = user_data.split(";")
+                result = msg_db.verify_user(user_name, user_psw)
+                if result:
+                    msg_to_user = 'J_OK;' + user_name
+                    connection.send(msg_to_user.encode())
+                    msg_db.add_user_to_db(user_name, user_psw)
+                else:
+                    print("user is not found")
+                    messages.put('J_ER')
+                    with lock:
+                        clients.remove(connection)
             elif user_data.startswith('DATA'):
-                messages.put(user_data)
+                protocol, user_name, use_msg = user_data.split(';')
+                broadcast_msg = protocol + ';' + user_name + ": " + use_msg
+                print(broadcast_msg)
+                messages.put(broadcast_msg)
             elif user_data.startswith('EXIT'):
                 connection.close()
                 with lock:
@@ -80,6 +102,7 @@ def broadcast_messages():
             broadcast_to_all = str(messages.get()).encode()
             for client in clients:
                 client.send(broadcast_to_all)
+            print(len(clients))
 
 
 thread_listen_to_clients = threading.Thread(target=listen_to_clients, args=(mySocket,))
