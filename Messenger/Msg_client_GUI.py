@@ -15,14 +15,16 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((SERVER_ADDR, PORT))
 
 
-class MyWeirdApp:
+class MyChatApp:
 
     def __init__(self, master):
         bg_color = '#004466'
         text_color = '#94b8b8'
+        welcome_text = '٩(●˙▿˙●)۶…⋆  Welcome  (◍•ᴗ•◍)❤'
 
-        master.title('**Strange App**')
+        master.title('**Chat App**')
         master.configure(background=bg_color)
+        master.resizable(False, False)
 
         self.style = ttk.Style()
         self.style.configure('TFrame', background=bg_color)
@@ -31,14 +33,15 @@ class MyWeirdApp:
 
         self.frame_chat = ttk.Frame(master)
         self.frame_chat.pack(side=RIGHT)
+        self.frame_chat.pack_propagate(0)
 
         ttk.Label(self.frame_chat, text='Name:').grid(row=0, column=1, padx=5, pady=2, sticky='sw')
         ttk.Label(self.frame_chat, text='Password:').grid(row=0, column=2, padx=5, pady=2, sticky='sw')
         ttk.Label(self.frame_chat, text='Type message:').grid(row=5, column=1, columnspan=2, padx=5)
-        self.name_holder = ttk.Label(self.frame_chat, text='**Welcome**')
+        self.name_holder = ttk.Label(self.frame_chat, text=welcome_text)
         self.name_holder.grid(row=4, column=1, columnspan=2, padx=5, sticky='sw')
 
-        self.entry_name = ttk.Entry(self.frame_chat, width=24, font=('Consolas', 10))
+        self.entry_name = ttk.Entry(self.frame_chat, width=24, font=('Helvetica', 10))
         self.entry_psw = ttk.Entry(self.frame_chat, show='*', width=24, font=('Consolas', 10))
         self.text_message = Text(self.frame_chat, width=50, height=3, font=('Consolas', 10))
         self.text_chat_record = Listbox(self.frame_chat, height=30, width=50, font=('Consolas', 10))
@@ -65,13 +68,13 @@ class MyWeirdApp:
 
         self.frame_multipurpose = ttk.Frame(master)
         self.frame_multipurpose.pack(side=LEFT)
+        self.frame_multipurpose.pack_propagate(0)
 
         ttk.Label(self.frame_multipurpose, text='Online users').grid(row=0, column=0, pady=5)
         self.list_online_users = Listbox(self.frame_multipurpose, height=31, width=20, font=('Consolas', 10))
         self.list_online_users.grid(row=1, column=0, padx=5)
         self.force_info = ttk.Label(self.frame_multipurpose, text='')
         self.force_info.grid(row=2, column=0, padx=5, pady=5)
-
         self.delete_chat_btn = ttk.Button(self.frame_multipurpose, text='delete chat', command=self.delete_all_chat_record)
         self.delete_chat_btn.grid(row=3, column=0, pady=5)
         self.brute_force_btn = ttk.Button(self.frame_multipurpose, text='brute force', command=self.test_brute_force)
@@ -108,8 +111,7 @@ class MyWeirdApp:
                     self.clear()
                     protocol, user_name = message_received.split(';')
                     print('J_OK' + ' ' + user_name)
-                    # self.list_online_users.insert(END, user_name)
-                    log_info_text = 'you are log in as: ' + user_name
+                    log_info_text = '(｡✿‿✿｡)you are log in as: ' + user_name
                     time_str = strftime("%Y-%m-%d %H:%M:%S", gmtime())
                     self.name_holder.config(text=log_info_text)
                     self.disable_log_in()
@@ -167,7 +169,7 @@ class MyWeirdApp:
         self.text_message.delete(1.0, 'end')
 
     def get_user_name(self):
-        return self.name_holder['text'][19:]
+        return self.name_holder['text'][len('(｡✿‿✿｡)you are log in as: '):]
 
     def disable_chat_input(self):
         self.text_message.config(state=DISABLED)
@@ -186,7 +188,7 @@ class MyWeirdApp:
         self.log_in_btn.config(state=DISABLED)
 
     def enable_log_in(self):
-        self.name_holder.config(text='**Welcome**')
+        self.name_holder.config(text='٩(●˙▿˙●)۶…⋆  Welcome  (◍•ᴗ•◍)❤')
         self.entry_name.config(state=NORMAL)
         self.entry_psw.config(state=NORMAL)
         self.new_user_btn.config(state=NORMAL)
@@ -240,7 +242,7 @@ class MyWeirdApp:
         self.style.configure('TLabel', background=bg_color, foreground=text_color)
 
     def change_bg_color_ocean(self):
-        color = '#4080bf'
+        color = '#004466'
         self.style.configure('TFrame', background=color)
         self.style.configure('TButton', background=color)
         self.style.configure('TLabel', background=color)
@@ -248,7 +250,7 @@ class MyWeirdApp:
 
 def main():
     root = Tk()
-    app = MyWeirdApp(root)
+    app = MyChatApp(root)
     recv_message_thread = threading.Thread(target=app.recv_messages, args=(client_socket,))
     recv_message_thread.start()
     root.mainloop()
