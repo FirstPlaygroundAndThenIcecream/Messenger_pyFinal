@@ -8,7 +8,7 @@ import protocol
 import User
 
 # storage for messages
-messages = queue.Queue()
+exchange_messages = queue.Queue()
 
 # storage for clients connection
 clients = []
@@ -38,10 +38,10 @@ def listen_to_clients(sock):
             print("OS error")
         else:
             clients.append(conn)
-            thread_new_client = threading.Thread(target=client_handler, args=(conn, messages))
+            thread_new_client = threading.Thread(target=client_handler, args=(conn, exchange_messages))
             thread_new_client.start()
-            thread_total = threading.active_count()
-            print('{:d} threads are running on the server side'.format(thread_total))
+            # thread_total = threading.active_count()
+            # print('{:d} threads are running on the server side'.format(thread_total))
 
 
 def client_handler(connection, messages):
@@ -81,7 +81,7 @@ def client_handler(connection, messages):
                     connection.send(server_response.encode())
                     print(user_name + ' has joined')
                     make_user(user_name, connection)
-                    print('now users are: ' + str(len(users)))
+                    print('{} users are online.'.format(len(users)))
                     # sending user list 'LIST;'
                     visible_users = get_visible_users()
                     messages.put(visible_users)
@@ -94,7 +94,7 @@ def client_handler(connection, messages):
                     connection.send(server_response.encode())
                     print(user_name + ' has joined')
                     make_user(user_name, connection)
-                    print('now users are: ' + str(len(users)))
+                    print('{} users are online.'.format(len(users)))
                     visible_users = get_visible_users()
                     messages.put(visible_users)
                     print(visible_users)
@@ -104,15 +104,14 @@ def client_handler(connection, messages):
             elif user_data.startswith('DATA'):
                 broadcast_msg = protocol.response_DATA(user_data)
                 messages.put(broadcast_msg)
-                print(broadcast_msg)
+                print(broadcast_msg.strip())
                 log_chat_history(broadcast_msg.split(';')[1])
 
             elif user_data.startswith('QUIT'):
-                connection.send('REMV'.encode())
                 set_user_invisible(user_name)
-                print(user_name + ' is appear offline')
                 visible_users = get_visible_users()
                 messages.put(visible_users)
+                connection.send('REMV'.encode())
 
 
 def make_user(name, connection):
@@ -138,7 +137,6 @@ def get_visible_users():
         for user in users:
             if user.is_visible() is True:
                 visible_users += user.get_name() + ' '
-                print(user.get_name())
         visible_users = 'LIST;' + visible_users
     return visible_users
 
@@ -158,10 +156,9 @@ def log_chat_history(chat):
 def broadcast_messages():
     while True:
         if len(clients) > 0:
-            broadcast_to_all = str(messages.get()).encode()
+            broadcast_to_all = str(exchange_messages.get()).encode()
             for client in clients:
                 client.send(broadcast_to_all)
-            # print(len(clients))
 
 
 thread_listen_to_clients = threading.Thread(target=listen_to_clients, args=(mySocket,))
