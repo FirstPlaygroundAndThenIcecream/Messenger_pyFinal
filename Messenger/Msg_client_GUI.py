@@ -1,8 +1,11 @@
 import socket
-import threading
+import threading, time
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
+from itertools import product
+import string
+from time import gmtime, strftime
 
 SERVER_ADDR = '127.0.0.1'
 PORT = 3000
@@ -34,7 +37,7 @@ class MyWeirdApp:
         self.name_holder.grid(row=4, column=1, columnspan=2, padx=5, sticky='sw')
 
         self.entry_name = ttk.Entry(self.frame_chat, width=24, font=('Consolas', 10))
-        self.entry_psw = ttk.Entry(self.frame_chat, width=24, font=('Consolas', 10))
+        self.entry_psw = ttk.Entry(self.frame_chat, show='*', width=24, font=('Consolas', 10))
         self.text_message = Text(self.frame_chat, width=50, height=3, font=('Consolas', 10))
         self.text_chat_record = Listbox(self.frame_chat, height=30, width=50, font=('Consolas', 10))
 
@@ -64,19 +67,21 @@ class MyWeirdApp:
         ttk.Label(self.frame_multipurpose, text='Online users').grid(row=0, column=0, pady=5)
         self.list_online_users = Listbox(self.frame_multipurpose, height=30, width=20, font=('Consolas', 10))
         self.list_online_users.grid(row=1, column=0)
+        self.force_info = ttk.Label(self.frame_multipurpose, text='')
+        self.force_info.grid(row=2, column=0, padx=5, pady=5)
 
-        ttk.Button(self.frame_multipurpose, text='delete') \
-            .grid(row=2, column=0, padx=5, pady=5)
-        ttk.Button(self.frame_multipurpose, text='brute force') \
-            .grid(row=3, column=0, padx=5, pady=5)
-        ttk.Button(self.frame_multipurpose, text='whatever') \
-            .grid(row=4, column=0, padx=5, pady=5)
+        self.delete_chat_btn = ttk.Button(self.frame_multipurpose, text='delete', command=self.delete_all_chat_record)
+        self.delete_chat_btn.grid(row=3, column=0, padx=5, pady=5)
+        self.brute_force_btn = ttk.Button(self.frame_multipurpose, text='brute force', command=self.test_brute_force)
+        self.brute_force_btn.grid(row=4, column=0, padx=5, pady=5)
+        self.bg_color_btn = ttk.Button(self.frame_multipurpose, text='whatever')
+        self.bg_color_btn.grid(row=5, column=0, padx=5, pady=5)
         ttk.Button(self.frame_multipurpose, text='another') \
-            .grid(row=5, column=0, padx=5, pady=5)
+            .grid(row=6, column=0, padx=5, pady=5)
 
 # -----------------------------event--------------------------------------------------------------------------
     def recv_messages(self, my_socket):
-        self.disable_chat_input()
+        self.disable_service()
         while True:
             try:
                 message_received = my_socket.recv(1024).decode()
@@ -90,45 +95,45 @@ class MyWeirdApp:
                 if message_received.startswith('N_ER'):
                     error_msg = 'please choose another user name'
                     messagebox.showerror('error', error_msg)
-                    self.clear()
-                    self.disable_chat_input()
-
+                    self.disable_service()
                 elif message_received.startswith('J_ER'):
                     error_msg = 'Can not find user, please try again'
                     messagebox.showerror('error', error_msg)
-                    self.clear()
-                    self.disable_chat_input()
-
+                    self.disable_service()
                 elif message_received.startswith('J_OK'):
                     self.clear()
                     protocol, user_name = message_received.split(';')
-                    print('J_OK')
+                    print('J_OK' + ' ' + user_name)
                     # self.list_online_users.insert(END, user_name)
                     log_info_text = 'you are log in as: ' + user_name
+                    time_str = strftime("%Y-%m-%d %H:%M:%S", gmtime())
                     self.name_holder.config(text=log_info_text)
                     self.disable_log_in()
-                    self.enable_chat_input()
+                    self.enable_service()
+                    self.text_chat_record.insert(END, time_str)
 
                 elif message_received.startswith('DATA'):
+                    print(message_received)
+                    self.enable_service()
+                    self.disable_log_in()
                     self.text_chat_record.insert(END, message_received[5:])
 
-                elif message_received.startswith('DATA'):
-                    warning_msg = 'please log in or register first'
-                    messagebox.showwarning('warning', warning_msg)
-
                 elif message_received.startswith('LIST'):
+                    self.enable_service()
+                    self.disable_log_in()
                     online_users = message_received.split(';')[1]
                     online_users_list = online_users.split(' ')
                     self.list_online_users.delete(0, END)
                     for user in online_users_list:
                         self.list_online_users.insert(END, user)
 
-
                 elif message_received.startswith('REMV'):
+                    print(message_received)
                     log_out_msg = 'you have log out, please log in to use our service again'
                     messagebox.showinfo('info', log_out_msg)
-                    self.enable_log_in()
-                    self.disable_chat_input()
+                    self.text_message.config(state=DISABLED)
+
+# --------------------------events---------------------------------
 
     def request_to_log_in(self):
         user_name = self.entry_name.get()
@@ -184,6 +189,43 @@ class MyWeirdApp:
         self.new_user_btn.config(state=NORMAL)
         self.log_in_btn.config(state=NORMAL)
 
+    def disable_user_list_chat_record(self):
+        self.list_online_users.configure(state=DISABLED)
+        self.text_chat_record.configure(state=DISABLED)
+
+    def enable_user_list_chat_record(self):
+        self.list_online_users.configure(state=NORMAL)
+        self.text_chat_record.configure(state=NORMAL)
+
+    def test_brute_force(self):
+        digits = string.digits
+        combination = [''.join(i) for i in product(digits, repeat=4)]
+        for each in combination:
+            if each == '8989':
+                self.force_info.config(text=each)
+
+    def delete_all_chat_record(self):
+        self.text_chat_record.delete(0, END)
+
+    def disable_btn_group(self):
+        self.delete_chat_btn.config(state=DISABLED)
+        self.brute_force_btn.config(state=DISABLED)
+        self.bg_color_btn.config(state=DISABLED)
+
+    def enable_btn_group(self):
+        self.delete_chat_btn.config(state=NORMAL)
+        self.brute_force_btn.config(state=NORMAL)
+        self.bg_color_btn.config(state=NORMAL)
+
+    def disable_service(self):
+        self.disable_chat_input()
+        self.disable_btn_group()
+        self.disable_user_list_chat_record()
+
+    def enable_service(self):
+        self.enable_chat_input()
+        self.enable_user_list_chat_record()
+        self.enable_btn_group()
 
 
 def main():

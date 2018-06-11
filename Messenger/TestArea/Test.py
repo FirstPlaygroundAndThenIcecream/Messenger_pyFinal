@@ -2,31 +2,23 @@
 from TestArea import ModuleTest
 import queue
 
+import User
 
 
 
+user = User.User("lei", "128.0.0.1")
 
-x = ModuleTest.addFunc(2, 3)
+user_1 = User.User("joe", "127.0.0.1")
 
-q = queue.Queue()
+users = []
 
-q.put("a")
-q.put("b")
-q.put("c")
+users.append(user)
+users.append(users)
 
+print(user.get_name())
 
-print(q.get())
-print(q.get())
+user.set_visible(False)
 
-print('this is \ntest'[9:])
+print(user.is_visible())
 
-print(len('you are log in as:\n'))
-
-users = ['pabjek', 'huhkuwud', 'hugo']
-
-s=''
-for user in users[0:2]:
-    s += user + " "
-
-s = 'LIST ' + s
-print(s)
+print('this' + str(len(users)))

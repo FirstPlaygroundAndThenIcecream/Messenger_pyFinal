@@ -1,8 +1,11 @@
 import socket
 import queue
 import threading
+from os import path
+from time import gmtime, strftime
 import msg_db
 import protocol
+import User
 
 # storage for messages
 messages = queue.Queue()
@@ -10,7 +13,7 @@ messages = queue.Queue()
 # storage for clients connection
 clients = []
 
-# user name list
+# user list
 users = []
 
 # set TCP/IP server
@@ -45,18 +48,21 @@ def client_handler(connection, messages):
     while True:
         try:
             user_data = connection.recv(1024).decode()
-        except ConnectionResetError:
+        except (ConnectionResetError, UnboundLocalError):
             print("A client has dropped connection")
-            users.remove(user_data.split(';')[1])
+            user_name = user_data.split(';')[1]
+            remove_user(user_name)
+            visible_users = get_visible_users()
+            messages.put(visible_users)
             with lock:
                 clients.remove(connection)
             break
-        except ConnectionAbortedError:
+        except (ConnectionAbortedError, UnboundLocalError):
             print("Unexpected lost connection")
             with lock:
                 clients.remove(connection)
             break
-        except OSError:
+        except (OSError, UnboundLocalError) as e:
             print("A client has quit")
             break
         except RuntimeError:
@@ -65,56 +71,88 @@ def client_handler(connection, messages):
                 clients.remove(connection)
             break
         else:
+            user_name = user_data.split(';')[1]
             if user_data.startswith('JO_N'):
                 server_response = protocol.response_JO_N(user_data, msg_db)
 
                 if server_response.startswith('N_ER'):
                     connection.send(server_response.encode())
-                    with lock:
-                        clients.remove(connection)
                 elif server_response.startswith('J_OK'):
                     connection.send(server_response.encode())
-                    users.append(server_response.split(';')[1])
-                    all_users = broadcast_user_list()
-                    messages.put(all_users)
-                    # user_list = 'LIST;' + users
-                    # messages.put(users.encode())
-                    print(len(users))
-                    print(server_response.split(';')[1])
+                    print(user_name + ' has joined')
+                    make_user(user_name, connection)
+                    print('now users are: ' + str(len(users)))
+                    # sending user list 'LIST;'
+                    visible_users = get_visible_users()
+                    messages.put(visible_users)
+                    print(visible_users)
 
             elif user_data.startswith('JOIN'):
                 server_response = protocol.response_JOIN(user_data, msg_db)
 
                 if server_response.startswith('J_OK'):
                     connection.send(server_response.encode())
-                    users.append(server_response.split(';')[1])
-                    all_users = broadcast_user_list()
-                    messages.put(all_users)
+                    print(user_name + ' has joined')
+                    make_user(user_name, connection)
+                    print('now users are: ' + str(len(users)))
+                    visible_users = get_visible_users()
+                    messages.put(visible_users)
+                    print(visible_users)
                 elif server_response.startswith('J_ER'):
                     connection.send(server_response.encode())
 
             elif user_data.startswith('DATA'):
                 broadcast_msg = protocol.response_DATA(user_data)
                 messages.put(broadcast_msg)
+                print(broadcast_msg)
+                log_chat_history(broadcast_msg.split(';')[1])
 
             elif user_data.startswith('QUIT'):
                 connection.send('REMV'.encode())
-                # remove from user list here
-                # remove connection from error catch part
-                #
-                # connection.close()
-                # with lock:
-                #     clients.remove(connection)
+                set_user_invisible(user_name)
+                print(user_name + ' is appear offline')
+                visible_users = get_visible_users()
+                messages.put(visible_users)
 
 
-def broadcast_user_list():
-    all_user = ''
+def make_user(name, connection):
+    user = User.User(name, connection)
+    users.append(user)
+
+
+def remove_user(name):
     for user in users:
-        all_user += user + ' '
-    all_user = 'LIST;' + all_user
-    return all_user
-    # for client in clients:
-    #     client.send(all_user)
+        if name == user.get_name():
+            users.remove(user)
+
+
+def set_user_invisible(name):
+    for user in users:
+        if name == user.get_name():
+            user.set_visible(False)
+
+
+def get_visible_users():
+    visible_users = ''
+    if len(users) > 0:
+        for user in users:
+            if user.is_visible() is True:
+                visible_users += user.get_name() + ' '
+                print(user.get_name())
+        visible_users = 'LIST;' + visible_users
+    return visible_users
+
+
+def log_chat_history(chat):
+    file_name = 'chat_history.txt'
+    file_exists = str(path.exists(file_name))
+    time_str = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    if file_exists == 'False':
+        file = open(file_name, 'w+')
+    file = open(file_name, 'a')
+    file.write(time_str + ':  ' + chat)
+    file.flush()
+    file.close()
 
 
 def broadcast_messages():
@@ -123,7 +161,7 @@ def broadcast_messages():
             broadcast_to_all = str(messages.get()).encode()
             for client in clients:
                 client.send(broadcast_to_all)
-            print(len(clients))
+            # print(len(clients))
 
 
 thread_listen_to_clients = threading.Thread(target=listen_to_clients, args=(mySocket,))

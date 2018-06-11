@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 
+KEY = 4
 
 client = MongoClient('mongodb://localhost:27017/')
 
@@ -14,12 +15,17 @@ def add_user_to_db(name, password):
 
 
 def verify_user(name, password):
-    user = make_user(name, password)
-    user_find = user_collection.find_one(user)
-    if not user_find is None:
-        return True
-    else:
+    user_find = user_collection.find_one({'user_name': name})
+
+    if user_find is None:
         return False
+    else:
+        user_find_password = decrypt_user_password(user_find['password'], KEY)
+        print(user_find_password)
+        if password == user_find_password:
+            return True
+        else:
+            return False
 
 
 def check_name_duplicate(name):
@@ -31,33 +37,26 @@ def check_name_duplicate(name):
 
 
 def make_user(name, password):
+    encrypt_password = encrypt_user_password(password, KEY)
     user = {
         "user_name": name,
-        "password": password
+        "password": encrypt_password
     }
     return user
 
 
-# ---------------print test----------------
+def encrypt_user_password(password, key):
+    new_psw = ""
+    for each in password:
+        after_modify = chr(ord(each) + key)
+        new_psw += after_modify
+    return new_psw
 
 
-# print(type(user_collection))
-#
-# print(type(user_collection.find_one({
-#     "user_name": "hugo"
-# })))
+def decrypt_user_password(encrypt_psw, key):
+    back_original = ""
+    for each in encrypt_psw:
+        decrypt_psw = chr(ord(each) - key)
+        back_original += decrypt_psw
+    return back_original
 
-#
-# # user_collection.find_one({"user_name": "John"})
-# print(user_collection.find_one({"user_name": "John"})['user_name'])
-
-x = check_name_duplicate("John")
-print(x)
-
-
-# result = check_name_duplicate("Ji")
-# print(result)
-#
-
-# result = verify_user("tintin", "tintin")
-# print(result)
