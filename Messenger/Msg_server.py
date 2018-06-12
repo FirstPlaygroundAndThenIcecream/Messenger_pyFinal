@@ -47,11 +47,13 @@ def listen_to_clients(sock):
 def client_handler(connection, messages):
     while True:
         try:
+            user_data = ''
             user_data = connection.recv(1024).decode()
         except (ConnectionResetError, UnboundLocalError):
             print("A client has dropped connection")
-            user_name = user_data.split(';')[1]
-            remove_user(user_name)
+            if len(user_data) > 0:
+                user_name = user_data.split(';')[1]
+                remove_user(user_name)
             visible_users = get_visible_users()
             messages.put(visible_users)
             with lock:
