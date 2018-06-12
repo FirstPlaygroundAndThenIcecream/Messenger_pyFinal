@@ -77,16 +77,16 @@ def client_handler(connection, messages):
                 server_response = protocol.response_JO_N(user_data, msg_db)
 
                 if server_response.startswith('N_ER'):
-                    connection.send(server_response.encode())
+                        connection.send(server_response.encode())
                 elif server_response.startswith('J_OK'):
-                    connection.send(server_response.encode())
-                    print(user_name + ' has joined')
-                    make_user(user_name, connection)
-                    print('{} users are online.'.format(len(users)))
-                    # sending user list 'LIST;'
-                    visible_users = get_visible_users()
-                    messages.put(visible_users)
-                    print(visible_users)
+                        connection.send(server_response.encode())
+                        print(user_name + ' has joined')
+                        make_user(user_name, connection)
+                        print('{} users are online.'.format(len(users)))
+                        # sending user list 'LIST;'
+                        visible_users = get_visible_users()
+                        messages.put(visible_users)
+                        print(visible_users)
 
             elif user_data.startswith('JOIN'):
                 server_response = protocol.response_JOIN(user_data, msg_db)

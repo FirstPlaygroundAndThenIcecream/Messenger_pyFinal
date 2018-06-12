@@ -207,7 +207,7 @@ class MyChatApp:
 
     def test_brute_force(self):
         digits = string.digits
-        combination = [''.join(i) for i in product(digits, repeat=4)]
+        combination = (''.join(i) for i in product(digits, repeat=4))
         for each in combination:
             if each == '8989':
                 self.force_info.config(text=each)
