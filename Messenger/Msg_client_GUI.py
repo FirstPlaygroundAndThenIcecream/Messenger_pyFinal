@@ -19,7 +19,6 @@ class MyChatApp:
 
     def __init__(self, master):
         bg_color = '#004466'
-        text_color = '#94b8b8'
         welcome_text = '٩(●˙▿˙●)۶…⋆  Welcome  (◍•ᴗ•◍)❤'
 
         master.title('**Chat App**')
@@ -29,7 +28,7 @@ class MyChatApp:
         self.style = ttk.Style()
         self.style.configure('TFrame', background=bg_color)
         self.style.configure('TButton', background=bg_color, foreground='#004466')
-        self.style.configure('TLabel', background=bg_color, font=('Consolas', 10), foreground=text_color)
+        self.style.configure('TLabel', background=bg_color, font=('Consolas', 10), foreground='#94b8b8')
 
         self.frame_chat = ttk.Frame(master)
         self.frame_chat.pack(side=RIGHT)
@@ -247,8 +246,8 @@ class MyChatApp:
     def change_bg_color_ocean(self):
         color = '#004466'
         self.style.configure('TFrame', background=color)
-        self.style.configure('TButton', background=color)
-        self.style.configure('TLabel', background=color)
+        self.style.configure('TButton', background=color, foreground='#004466')
+        self.style.configure('TLabel', background=color, foreground='#94b8b8')
 
 
 def main():
