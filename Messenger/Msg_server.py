@@ -49,7 +49,7 @@ def client_handler(connection, messages):
         try:
             user_data = ''
             user_data = connection.recv(1024).decode()
-        except (ConnectionResetError, UnboundLocalError):
+        except ConnectionResetError:
             print("A client has dropped connection")
             if len(user_data) > 0:
                 user_name = user_data.split(';')[1]
@@ -59,12 +59,12 @@ def client_handler(connection, messages):
             with lock:
                 clients.remove(connection)
             break
-        except (ConnectionAbortedError, UnboundLocalError):
+        except ConnectionAbortedError:
             print("Unexpected lost connection")
             with lock:
                 clients.remove(connection)
             break
-        except (OSError, UnboundLocalError):
+        except OSError:
             print("A client has quit")
             break
         except RuntimeError:
