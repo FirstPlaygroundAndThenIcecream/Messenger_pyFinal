@@ -62,7 +62,7 @@ def client_handler(connection, messages):
             with lock:
                 clients.remove(connection)
             break
-        except (OSError, UnboundLocalError) as e:
+        except (OSError, UnboundLocalError):
             print("A client has quit")
             break
         except RuntimeError:
@@ -72,6 +72,7 @@ def client_handler(connection, messages):
             break
         else:
             user_name = user_data.split(';')[1]
+            print(user_data)
             if user_data.startswith('JO_N'):
                 server_response = protocol.response_JO_N(user_data, msg_db)
 
@@ -84,8 +85,7 @@ def client_handler(connection, messages):
                     print('{} users are online.'.format(len(users)))
                     # sending user list 'LIST;'
                     visible_users = get_visible_users()
-                    with lock:
-                        messages.put(visible_users)
+                    messages.put(visible_users)
                     print(visible_users)
 
             elif user_data.startswith('JOIN'):
@@ -97,38 +97,33 @@ def client_handler(connection, messages):
                     make_user(user_name, connection)
                     print('{} users are online.'.format(len(users)))
                     visible_users = get_visible_users()
-                    with lock:
-                        messages.put(visible_users)
+                    messages.put(visible_users)
                     print(visible_users)
                 elif server_response.startswith('J_ER'):
                     connection.send(server_response.encode())
 
             elif user_data.startswith('DATA'):
                 broadcast_msg = protocol.response_DATA(user_data)
-                with lock:
-                    messages.put(broadcast_msg)
+                messages.put(broadcast_msg)
                 print(broadcast_msg.strip())
                 log_chat_history(broadcast_msg.split(';')[1])
 
             elif user_data.startswith('QUIT'):
                 set_user_invisible(user_name)
                 visible_users = get_visible_users()
-                with lock:
-                    messages.put(visible_users)
+                messages.put(visible_users)
                 connection.send('REMV'.encode())
 
 
 def make_user(name, connection):
     user = User.User(name, connection)
-    with lock:
-        users.append(user)
+    users.append(user)
 
 
 def remove_user(name):
     for user in users:
         if name == user.get_name():
-            with lock:
-                users.remove(user)
+            users.remove(user)
 
 
 def set_user_invisible(name):

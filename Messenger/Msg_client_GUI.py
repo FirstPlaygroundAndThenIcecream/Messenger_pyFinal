@@ -19,6 +19,7 @@ class MyChatApp:
 
     def __init__(self, master):
         bg_color = '#004466'
+        text_color = '#94b8b8'
         welcome_text = '٩(●˙▿˙●)۶…⋆  Welcome  (◍•ᴗ•◍)❤'
 
         master.title('**Chat App**')
@@ -28,7 +29,7 @@ class MyChatApp:
         self.style = ttk.Style()
         self.style.configure('TFrame', background=bg_color)
         self.style.configure('TButton', background=bg_color, foreground='#004466')
-        self.style.configure('TLabel', background=bg_color, font=('Consolas', 10), foreground='#94b8b8')
+        self.style.configure('TLabel', background=bg_color, font=('Consolas', 10), foreground=text_color)
 
         self.frame_chat = ttk.Frame(master)
         self.frame_chat.pack(side=RIGHT)
@@ -126,10 +127,7 @@ class MyChatApp:
                 elif message_received.startswith('LIST'):
                     online_users = message_received.split(';')[1]
                     online_users_list = online_users.split(' ')
-                    try:
-                        self.list_online_users.delete(0, END)
-                    except RuntimeError:
-                        print('delete list error')
+                    self.list_online_users.delete(0, END)
                     for user in online_users_list:
                         self.list_online_users.insert(END, user)
 
@@ -164,7 +162,7 @@ class MyChatApp:
         self.entry_psw.delete(0, 'end')
 
     def clear_message(self):
-        self.text_message.delete(1.0, END)
+        self.text_message.delete('1.0', END)
 
     def collect_message(self):
         local_user_name = self.get_user_name()
@@ -247,10 +245,10 @@ class MyChatApp:
         self.style.configure('TLabel', background=bg_color, foreground=text_color)
 
     def change_bg_color_ocean(self):
-        bg_color = '#004466'
-        self.style.configure('TFrame', background=bg_color)
-        self.style.configure('TButton', background=bg_color, foreground='#004466')
-        self.style.configure('TLabel', background=bg_color, foreground='#94b8b8')
+        color = '#004466'
+        self.style.configure('TFrame', background=color)
+        self.style.configure('TButton', background=color)
+        self.style.configure('TLabel', background=color)
 
 
 def main():
@@ -258,6 +256,8 @@ def main():
     app = MyChatApp(root)
     recv_message_thread = threading.Thread(target=app.recv_messages, args=(client_socket,))
     recv_message_thread.start()
+    # thread_total = threading.active_count()
+    # print('{:d} threads are running on the client side'.format(thread_total))
     root.mainloop()
 
 
